@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/saravase/golang_microservice_master/greet/greetpb"
 	"google.golang.org/grpc"
@@ -28,8 +29,85 @@ func main() {
 
 	// doServerStreaming(client)
 
-	doClientStreaming(client)
+	// doClientStreaming(client)
 
+	doBiDirectionalStreaming(client)
+
+}
+
+func doBiDirectionalStreaming(client greetpb.GreetServiceClient) {
+
+	log.Println("GreetEveryone bi-directional streaming RPC triggered ....")
+
+	greetings := []*greetpb.GreetEveryoneRequest{
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "saravana",
+				LastName:  "kumar",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "optimus",
+				LastName:  "prime",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "prabhu",
+				LastName:  "deva",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "chithra",
+				LastName:  "deva",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "kasthoori",
+				LastName:  "maan",
+			},
+		},
+	}
+
+	stream, err := client.GreetEveryone(context.Background())
+	if err != nil {
+		log.Fatalf("Error while calling GreetEveryone bi-directional streaming RPC: %v\n", err)
+	}
+
+	ch := make(chan struct{})
+
+	go func() {
+		for _, greet := range greetings {
+			err := stream.Send(greet)
+			if err != nil {
+				log.Fatalf("Error while sending to server: %v\n", err)
+			}
+			log.Printf("Sending Greet : %v\n", greet)
+			time.Sleep(1111 * time.Millisecond)
+		}
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(ch)
+				break
+			}
+			if err != nil {
+				log.Fatalf("Error while streaming data from server: %v\n", err)
+				close(ch)
+			}
+
+			log.Printf("Server response : %v\n", res.GetResult())
+		}
+	}()
+
+	<-ch
 }
 
 func doClientStreaming(client greetpb.GreetServiceClient) {

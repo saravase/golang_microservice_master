@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"time"
 
 	"github.com/saravase/golang_microservice_master/calculator/calculatorpb"
 	"google.golang.org/grpc"
@@ -22,7 +23,9 @@ func main() {
 
 	// doServerStreaming(client)
 
-	doClientStreaming(client)
+	// doClientStreaming(client)
+
+	doBiDirectionalStreaming(client)
 }
 
 func doUnary(client calculatorpb.CalculatorServiceClient) {
@@ -90,4 +93,50 @@ func doClientStreaming(client calculatorpb.CalculatorServiceClient) {
 	}
 
 	log.Printf("Average : %v\n", res.Average)
+}
+
+func doBiDirectionalStreaming(client calculatorpb.CalculatorServiceClient) {
+
+	stream, err := client.FindMaximum(context.Background())
+	if err != nil {
+		log.Printf("Error while call FindMaximum bi-directional streaming RPC: %v\n", err)
+	}
+
+	numbers := []int32{1, 32, 23, 4, 324, 234, 25, 23, 4324, 234, 235, 32, 32, 5}
+
+	ch := make(chan struct{})
+
+	go func() {
+		for _, n := range numbers {
+			err := stream.Send(&calculatorpb.FindMaximumRequest{
+				Number: n,
+			})
+			if err != nil {
+				log.Printf("Error while sending data to server: %v\n", err)
+			}
+
+			log.Printf("Send Number : %v\n", n)
+			time.Sleep(1111 * time.Millisecond)
+		}
+
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(ch)
+				break
+			}
+			if err != nil {
+				log.Printf("Error while sending data to server: %v\n", err)
+				close(ch)
+			}
+
+			log.Printf("Maximum: %v\n", res.GetMax())
+		}
+	}()
+
+	<-ch
 }
