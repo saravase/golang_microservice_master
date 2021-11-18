@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 
@@ -25,8 +26,41 @@ func main() {
 
 	// doUnary(client)
 
-	doServerStreaming(client)
+	// doServerStreaming(client)
 
+	doClientStreaming(client)
+
+}
+
+func doClientStreaming(client greetpb.GreetServiceClient) {
+
+	log.Println("LongGreet client streaming RPC triggered ....")
+
+	stream, err := client.LongGreet(context.Background())
+	if err != nil {
+		log.Fatalf("Counldn't call LongGreet client streaming RPC : %v\n", err)
+	}
+
+	for i := 0; i < 10; i++ {
+
+		err := stream.Send(&greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: fmt.Sprintf("%s %d", "Optimus", i),
+				LastName:  fmt.Sprintf("%s %d", "Prime", i),
+			},
+		})
+
+		if err != nil {
+			log.Fatalf("Error, While sending data to server : %v\n", err)
+		}
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error, While receving data from server : %v\n", err)
+	}
+
+	log.Printf("Result: %v\n", res.GetResult())
 }
 
 func doServerStreaming(client greetpb.GreetServiceClient) {
