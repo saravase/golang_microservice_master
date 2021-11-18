@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/saravase/golang_microservice_master/greet/greetpb"
 	"google.golang.org/grpc"
@@ -12,7 +13,10 @@ import (
 
 type server struct{}
 
-func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+func (s *server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+
+	log.Printf("Greet function was invoked: %v\n", req)
+
 	first_name := req.Greeting.FirstName
 	last_name := req.Greeting.LastName
 
@@ -21,6 +25,25 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 	}
 
 	return res, nil
+}
+
+func (s *server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb.GreetService_GreetManyTimesServer) error {
+
+	log.Printf("GreetManyTimes function was invoked: %v\n", req)
+
+	first_name := req.GetGreeting().GetFirstName()
+	last_name := req.GetGreeting().GetLastName()
+
+	for i := 0; i < 10; i++ {
+		res := &greetpb.GreetManyTimesResponse{
+			Result: fmt.Sprintf("Hi %s %s with Number : %d", first_name, last_name, i),
+		}
+
+		stream.Send(res)
+		time.Sleep(1000 * time.Millisecond)
+	}
+
+	return nil
 }
 
 func main() {
