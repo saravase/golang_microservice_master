@@ -4,10 +4,13 @@ import (
 	"context"
 	"io"
 	"log"
+	"math"
 	"net"
 
 	"github.com/saravase/golang_microservice_master/calculator/calculatorpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -93,6 +96,23 @@ func (s *server) FindMaximum(stream calculatorpb.CalculatorService_FindMaximumSe
 			return err
 		}
 	}
+}
+
+func (s *server) SquareRoot(ctx context.Context, req *calculatorpb.SquareRootRequest) (*calculatorpb.SquareRootResponse, error) {
+
+	n := req.GetNumber()
+
+	log.Printf("Number: %v\n", n)
+
+	if n == 0 {
+		return nil, status.Errorf(codes.InvalidArgument,
+			"Number shouldn't be 0")
+	}
+
+	return &calculatorpb.SquareRootResponse{
+		Square: math.Sqrt(float64(n)),
+	}, nil
+
 }
 
 func main() {

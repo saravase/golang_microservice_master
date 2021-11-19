@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package player;
+
+option go_package = "./player/playerpb";
+
+message Request{
+    string filename = 1;
+}
+
+message Response{
+    bytes content = 1;   
+}
+
+service PlayerService {
+    rpc GetVideo(Request) returns (stream Response){};
+}
