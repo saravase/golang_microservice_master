@@ -9,6 +9,8 @@ import (
 
 	"github.com/saravase/golang_microservice_master/greet/greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -31,7 +33,11 @@ func main() {
 
 	// doClientStreaming(client)
 
-	doBiDirectionalStreaming(client)
+	// doBiDirectionalStreaming(client)
+
+	doUnaryWithTimeout(client, 5*time.Second)
+
+	doUnaryWithTimeout(client, 1*time.Second)
 
 }
 
@@ -185,6 +191,40 @@ func doUnary(client greetpb.GreetServiceClient) {
 	res, err := client.Greet(context.Background(), req)
 	if err != nil {
 		log.Fatalf("Couldn't able to call greet unary RPC: %v\n", err)
+	}
+
+	log.Printf("Result greet unary RPC: %v\n", res)
+}
+
+func doUnaryWithTimeout(client greetpb.GreetServiceClient, timeout time.Duration) {
+
+	log.Println("GreetWithTimeout unary RPC triggered ....")
+
+	req := &greetpb.GreetWithTimeoutRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Optimus",
+			LastName:  "Primz",
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	res, err := client.GreetWithTimeout(ctx, req)
+	if err != nil {
+		status, ok := status.FromError(err)
+
+		if ok {
+			if status.Code() == codes.DeadlineExceeded {
+				log.Fatalln("Timeout exceeded")
+			} else {
+				log.Fatalf("Other error occurred: %v\n", err)
+			}
+		} else {
+			log.Fatalf("Couldn't able to call greet unary RPC: %v\n", err)
+		}
+
+		return
 	}
 
 	log.Printf("Result greet unary RPC: %v\n", res)

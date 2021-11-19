@@ -41,6 +41,14 @@ message GreetEveryoneResponse{
     string result = 2;
 }
 
+message GreetWithTimeoutRequest{
+    Greeting greeting = 1;
+}
+
+message GreetWithTimeoutResponse{
+    string result = 1;
+}
+
 service GreetService{
     // Unary
     rpc Greet(GreetRequest) returns (GreetResponse) {};
@@ -53,4 +61,7 @@ service GreetService{
 
     // Bi-Directional Streaming
     rpc GreetEveryone(stream GreetEveryoneRequest) returns (stream GreetEveryoneResponse) {};
+
+    // GreetWithTimeout
+    rpc GreetWithTimeout(GreetWithTimeoutRequest) returns (GreetWithTimeoutResponse) {};
 }

@@ -10,6 +10,8 @@ import (
 
 	"github.com/saravase/golang_microservice_master/greet/greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct{}
@@ -96,7 +98,27 @@ func (s *server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) 
 			return err
 		}
 	}
+}
 
+func (s *server) GreetWithTimeout(ctx context.Context, req *greetpb.GreetWithTimeoutRequest) (*greetpb.GreetWithTimeoutResponse, error) {
+
+	log.Printf("GreetWithTimeout function was invoked: %v\n", req)
+
+	for i := 0; i < 3; i++ {
+		if ctx.Err() == context.Canceled {
+			return nil, status.Errorf(codes.Canceled, "Request reached timeout")
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	first_name := req.Greeting.FirstName
+	last_name := req.Greeting.LastName
+
+	res := &greetpb.GreetWithTimeoutResponse{
+		Result: fmt.Sprintf("Hi %s %s", first_name, last_name),
+	}
+
+	return res, nil
 }
 
 func main() {
